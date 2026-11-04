@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools==80.9.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "internet-download-manager"
+version = "1.1.0"
+description = "A local download dashboard with resumable transfers and a command-line interface"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+idm = "idm.cli:main"
+
+[project.gui-scripts]
+flow = "idm.desktop:main"
+
+[tool.setuptools.packages.find]
+include = ["idm*"]
+
+[tool.setuptools.package-data]
+idm = ["static/*"]

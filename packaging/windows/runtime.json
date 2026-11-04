@@ -1,0 +1,9 @@
+{
+  "package": "python",
+  "version": "3.13.17",
+  "architecture": "win-amd64",
+  "url": "https://api.nuget.org/v3-flatcontainer/python/3.13.17/python.3.13.17.nupkg",
+  "sha512_base64": "DmZ5KLtPGVc8bNiPZRM7LgeyQ6XHFvM1tWqma7nsb4IyglbSLDop4joCdqxcam14YhH+q1JIkK0eVmKRlsaynA==",
+  "metadata": "https://api.nuget.org/v3/catalog0/data/2026.10.21.16.02.39/python.3.13.17.json",
+  "publisher": "Python Software Foundation"
+}

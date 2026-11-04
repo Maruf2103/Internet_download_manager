@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#087f5b">
+  <title>Flow — Download Manager</title>
+  <link rel="icon" href="/flow.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6m0 4h.01"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+    <symbol id="i-theme" viewBox="0 0 24 24"><path d="M20.5 13a8.5 8.5 0 0 1-9.5-9.5A8.5 8.5 0 1 0 20.5 13Z"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="m10 14 4-4M8 16l-1 1a4.2 4.2 0 0 1-6-6l5-5a4.2 4.2 0 0 1 6 0m0 12a4.2 4.2 0 0 0 6 0l5-5a4.2 4.2 0 0 0-6-6l-1 1" transform="translate(1 0) scale(.9)"/></symbol>
+    <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H5v16h14V5h-3"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z"/></symbol>
+    <symbol id="i-retry" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 2 8M3 3v7h7"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H5v18h14V8Zm0 0v5h5M8 13h8m-8 4h5"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><path d="M4 9h16v12H4ZM3 3h18v6H3Zm6 10h6"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1"/><path d="m3 17 5-5 4 4 4-6 5 7"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3Z"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10M6 5a9 9 0 1 0 12 0"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Zm-4 9 3 3 5-6"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7V4h7l3 3h8v14H3Z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+  </defs></svg>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Flow home"><span class="brand-icon"><svg class="icon"><use href="#i-download"/></svg></span><span class="brand-word">flow<span>.</span></span></a>
+    <div class="workspace"><span class="workspace-icon"><svg class="icon"><use href="#i-folder"/></svg></span><div>Personal workspace<small>A little more organized.</small></div></div>
+    <p class="eyebrow nav-label">YOUR LIBRARY</p>
+    <nav aria-label="Download filters">
+      <button class="nav-item selected" data-filter="all" aria-label="All downloads" aria-current="page"><svg class="icon"><use href="#i-grid"/></svg><span>All downloads</span><span id="count-all" class="count">0</span></button>
+      <button class="nav-item" data-filter="active" aria-label="In progress"><svg class="icon"><use href="#i-activity"/></svg><span>In progress</span><span id="count-active" class="count">0</span></button>
+      <button class="nav-item" data-filter="completed" aria-label="Completed"><svg class="icon"><use href="#i-check"/></svg><span>Completed</span><span id="count-completed" class="count">0</span></button>
+      <button class="nav-item" data-filter="paused" aria-label="Paused"><svg class="icon"><use href="#i-pause"/></svg><span>Paused</span><span id="count-paused" class="count">0</span></button>
+      <button class="nav-item" data-filter="failed" aria-label="Needs attention"><svg class="icon"><use href="#i-alert"/></svg><span>Needs attention</span><span id="count-failed" class="count">0</span></button>
+    </nav>
+    <div class="sidebar-bottom"><div class="privacy-card"><svg class="icon"><use href="#i-shield"/></svg><strong>Yours. From start to finish.</strong><p>Your downloads stay on this machine.<br>No account. No upload to our servers.</p></div><div class="sidebar-foot"><span class="version">FLOW 1.1</span><button id="quit" class="quiet-button" title="Quit Flow"><svg class="icon"><use href="#i-power"/></svg> Quit Flow</button></div></div>
+  </aside>
+  <div class="app-shell">
+    <header class="topbar"><span class="breadcrumb">Workspace <span>/</span> <strong>Downloads</strong></span><div class="topbar-actions"><span id="connection" role="status"><span class="status-dot"></span> Connected</span><span class="topbar-divider"></span><button id="theme" class="icon-button" title="Switch color theme" aria-label="Switch color theme"><svg class="icon"><use href="#i-theme"/></svg></button><button id="quit-top" class="icon-button" title="Quit Flow" aria-label="Quit Flow"><svg class="icon"><use href="#i-power"/></svg></button><span class="avatar" aria-label="Personal workspace">F</span></div></header>
+    <main>
+      <section class="page-heading"><div><p class="eyebrow">A HOME FOR YOUR FILES</p><h1>Your downloads<span>.</span></h1><p class="muted">Less waiting. More doing. Everything in one place.</p></div><button class="button primary" data-open-add><svg class="icon"><use href="#i-plus"/></svg> New download <kbd>N</kbd></button></section>
+      <section class="quick-add-section" aria-label="Quick download"><form id="quick-add" class="quick-add"><span class="link-icon"><svg class="icon"><use href="#i-link"/></svg></span><input id="quick-url" type="url" required autocomplete="off" aria-label="Download URL" placeholder="Paste a download link to get started…"><button id="paste-url" class="icon-button" type="button" title="Paste link from clipboard" aria-label="Paste link from clipboard"><svg class="icon"><use href="#i-clipboard"/></svg></button><button id="quick-submit" aria-label="Download link" class="button primary" type="submit"><svg class="icon"><use href="#i-download"/></svg><span>Download</span></button></form><div class="quick-hint"><span><svg class="icon"><use href="#i-shield"/></svg> HTTP & HTTPS. Secure transfers. Yours to keep.</span><button class="text-button" data-open-add>Have a few links? Add them together <svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></div><p id="quick-error" class="error-text" role="alert"></p></section>
+      <section class="stats" aria-label="Download statistics">
+        <article class="stat"><div class="stat-top"><span class="stat-label">In progress</span><span class="stat-icon mint"><svg class="icon"><use href="#i-download"/></svg></span></div><strong id="stat-active">0 <small>files</small></strong><span class="stat-foot" id="stat-queue">Your queue is clear</span></article>
+        <article class="stat"><div class="stat-top"><span class="stat-label">Transfer speed</span><span class="stat-icon blue"><svg class="icon"><use href="#i-activity"/></svg></span></div><strong id="stat-speed">0 <small>B/s</small></strong><span class="stat-foot">Combined speed across active downloads</span></article>
+        <article class="stat"><div class="stat-top"><span class="stat-label">Completed</span><span class="stat-icon violet"><svg class="icon"><use href="#i-check"/></svg></span></div><strong id="stat-completed">0 <small>files</small></strong><span class="stat-foot" id="stat-size">0 B downloaded</span></article>
+      </section>
+      <section class="downloads-panel" aria-labelledby="list-heading">
+        <div class="panel-header"><div><h2 id="list-heading">All downloads <span id="list-count">0</span></h2><p class="muted" id="list-description">A little progress, every second.</p></div><div class="queue-actions"><button id="pause-all" aria-label="Pause all" class="button secondary"><svg class="icon"><use href="#i-pause"/></svg><span>Pause all</span></button><button id="resume-all" aria-label="Resume all" class="button secondary"><svg class="icon"><use href="#i-play"/></svg><span>Resume all</span></button></div></div>
+        <div class="list-toolbar"><div class="tabs" aria-label="Quick filters"><button class="tab selected" data-filter="all">All files</button><button class="tab" data-filter="active">Active</button><button class="tab" data-filter="completed">Completed</button></div><div class="list-tools"><label class="search"><svg class="icon"><use href="#i-search"/></svg><input id="search" type="search" placeholder="Find a file…" aria-label="Search downloads"><kbd>/</kbd></label><select id="sort" aria-label="Sort downloads"><option value="recent">Newest first</option><option value="oldest">Oldest first</option><option value="name">File name</option><option value="size">Largest first</option></select></div></div>
+        <div class="column-labels"><span>FILE</span><span>PROGRESS</span><span>STATUS</span><span class="align-right">ACTIONS</span></div>
+        <div id="download-list" aria-label="Downloads"></div>
+        <div id="empty" class="empty-state" hidden><div class="empty-illustration" aria-hidden="true"><span class="empty-file back"><svg class="icon"><use href="#i-file"/></svg></span><span class="empty-file front"><svg class="icon"><use href="#i-download"/></svg></span><i class="empty-spark one"></i><i class="empty-spark two"></i></div><h3>A clear queue. A fresh start.</h3><p>That file you need is just a link away.<br>Paste it above, or add a few downloads at once.</p><button class="button secondary" data-open-add><svg class="icon"><use href="#i-plus"/></svg><span>Add your first download</span></button></div>
+        <div class="panel-footer"><span id="showing">Connecting to your queue…</span><span class="worker-info"><span class="status-dot"></span><span id="worker-count">3</span> downloads at a time</span></div>
+      </section>
+      <footer class="page-footer"><span><svg class="icon"><use href="#i-shield"/></svg> Local files. Full control.</span><span>Pick up where you left off. Flow remembers.</span></footer>
+    </main>
+  </div>
+  <dialog id="add-dialog" aria-labelledby="dialog-title"><form id="add-form"><div class="dialog-heading"><span class="dialog-icon mint"><svg class="icon"><use href="#i-link"/></svg></span><button class="icon-button" type="button" id="close-dialog" aria-label="Close dialog"><svg class="icon"><use href="#i-close"/></svg></button></div><p class="eyebrow">MAKE ROOM FOR SOMETHING GOOD</p><h2 id="dialog-title">Add to your queue.</h2><p class="muted">One link or a whole list. We’ll keep things moving.</p><label class="field-label" for="urls">Download links <span>One per line · up to 50</span></label><textarea id="urls" name="urls" rows="5" placeholder="https://example.com/your-file.zip" required spellcheck="false"></textarea><p class="field-note"><svg class="icon"><use href="#i-shield"/></svg> Files with the same name are kept separately.</p><p id="form-error" class="error-text" role="alert"></p><div class="dialog-footer"><button class="button secondary" type="button" id="cancel-dialog">Cancel</button><button class="button primary" id="add-submit" type="submit"><svg class="icon"><use href="#i-download"/></svg> Start downloading</button></div></form></dialog>
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title"><form id="confirm-form"><div class="dialog-heading"><span class="dialog-icon rose"><svg class="icon"><use href="#i-trash"/></svg></span><button type="button" class="icon-button" data-close-confirm aria-label="Close confirmation"><svg class="icon"><use href="#i-close"/></svg></button></div><h2 id="confirm-title">Remove download?</h2><p id="confirm-description" class="muted"></p><div class="dialog-footer"><button class="button secondary" type="button" data-close-confirm>Keep it</button><button id="confirm-submit" type="submit" class="button danger">Remove download</button></div></form></dialog>
+  <div id="toast" role="status" hidden></div>
+  <template id="download-template"><article class="download-row"><div class="file-info"><span class="file-icon"><svg class="icon"><use href="#i-file"/></svg><small class="file-extension"></small></span><div class="file-details"><strong class="file-name"></strong><span class="file-source"></span><span class="file-error"></span></div></div><div class="progress-cell"><div class="progress-meta"><span class="file-size"></span><span class="file-percent"></span></div><div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100"><span class="progress-fill"></span></div><span class="file-speed"></span></div><div class="status-cell"><span class="state-pill"></span></div><div class="row-actions"></div></article></template>
+</body>
+</html>
