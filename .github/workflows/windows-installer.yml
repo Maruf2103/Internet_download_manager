@@ -19,15 +19,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Test application and build wheel
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $PSNativeCommandUseErrorActionPreference = $true
-          python -m pip install -r requirements-dev.txt
-          python -m pip install playwright==1.62.0
-          python -m playwright install chromium
-          python -m unittest discover -s tests -v
-          python -m pip wheel --no-build-isolation --no-deps . --wheel-dir dist
+      - name: Install pinned packaging tools
+        run: python -m pip install -r requirements-dev.txt
+      - name: Install browser test harness
+        run: python -m pip install playwright==1.62.0
+      - name: Install test Chromium
+        run: python -m playwright install chromium
+      - name: Run Windows application tests
+        run: python tools/ci_tests.py
+      - name: Build application wheel
+        run: python -m pip wheel --no-build-isolation --no-deps . --wheel-dir dist
       - name: Assemble verified offline Windows package
         run: python tools/build_windows.py
       - name: Validate native Windows app and Chrome integration
