@@ -10,7 +10,7 @@ async function initialize() {
   $("capture").checked = !!settings.capture;
   $("message").textContent = settings.lastStatus || "";
   try { const result = await send({ action: "ping" }); $("connection").textContent = `Flow ${result.version} bridge is ready`; }
-  catch { $("connection").textContent = "Install or repair Flow 2 to connect the Chrome bridge."; }
+  catch (error) { $("connection").textContent = `Bridge unavailable: ${error.message} Install or repair Flow 2, then restart Chrome.`; }
 }
 $("send-form").addEventListener("submit", async (event) => {
   event.preventDefault(); $("send").disabled = true;

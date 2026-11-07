@@ -59,7 +59,10 @@ def main():
                     assert extension_id() in workers[0].url
                     page = context.new_page(); errors = []; page.on('pageerror', lambda e: errors.append(str(e)))
                     page.goto(f'chrome-extension://{extension_id()}/popup.html')
-                    expect(page.locator('#connection')).to_contain_text('bridge is ready', timeout=15000)
+                    try:
+                        expect(page.locator('#connection')).to_contain_text('bridge is ready', timeout=15000)
+                    except Exception:
+                        raise RuntimeError('Chrome native bridge: ' + page.locator('#connection').inner_text()) from None
                     page.locator('#links').fill(f'http://127.0.0.1:{fixture.server_port}/setup.exe\nhttp://127.0.0.1:{fixture.server_port}/archive.zip')
                     page.locator('#send').click(); expect(page.locator('#message')).to_contain_text('2 file(s) added', timeout=15000)
                     for job in manager.snapshot()['jobs']:
