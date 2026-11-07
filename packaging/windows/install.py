@@ -152,11 +152,13 @@ $flowProperties = @{{ DisplayName='Flow Download Manager'; DisplayVersion={ps_qu
 foreach ($flowKey in $flowProperties.Keys) {{ New-ItemProperty $flowRegistry -Name $flowKey -Value $flowProperties[$flowKey] -PropertyType String -Force | Out-Null }}
 New-ItemProperty $flowRegistry -Name NoModify -Value 1 -PropertyType DWord -Force | Out-Null
 New-ItemProperty $flowRegistry -Name NoRepair -Value 1 -PropertyType DWord -Force | Out-Null
-$flowHostKey = 'HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.maruf2103.flow'
-New-Item $flowHostKey -Force | Out-Null
-(Get-Item $flowHostKey).SetValue('', {ps_quote(host)}, [Microsoft.Win32.RegistryValueKind]::String)
 """
     subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script], check=True)
+    # Registry provider Get-Item returns a read-only .NET handle. Use the
+    # standard Windows API with a writable per-user handle instead.
+    import winreg
+    with winreg.CreateKey(winreg.HKEY_CURRENT_USER, r"Software\Google\Chrome\NativeMessagingHosts\com.maruf2103.flow") as key:
+        winreg.SetValueEx(key, "", 0, winreg.REG_SZ, str(host))
 
 
 def main():
@@ -185,7 +187,10 @@ def main():
         if not args.no_launch:
             subprocess.Popen([str(target / "runtime" / "pythonw.exe"), "-I", str(target / "launch.py")], cwd=target)
         return 0
-    except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:
+    except subprocess.CalledProcessError:
+        print("Flow's Windows shortcut/registration step failed. See the Windows error above, then retry the installer.", file=sys.stderr)
+        return 1
+    except (OSError, ValueError, RuntimeError) as error:
         print(f"Flow could not be installed: {error}", file=sys.stderr)
         return 1
 
