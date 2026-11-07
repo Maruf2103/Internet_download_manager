@@ -207,8 +207,12 @@ class ManagerTests(unittest.TestCase):
         import sqlite3
 
         job["state"] = "cancelling"
-        with sqlite3.connect(Path(self.directory.name) / "history.sqlite3") as db:
-            db.execute("UPDATE jobs SET data = ? WHERE id = ?", (json.dumps(job), key))
+        db = sqlite3.connect(Path(self.directory.name) / "history.sqlite3")
+        try:
+            with db:
+                db.execute("UPDATE jobs SET data = ? WHERE id = ?", (json.dumps(job), key))
+        finally:
+            db.close()
         self.manager = DownloadManager(self.directory.name)
         recovered = self.manager.snapshot()["jobs"][0]
         self.assertEqual(recovered["state"], "cancelled")

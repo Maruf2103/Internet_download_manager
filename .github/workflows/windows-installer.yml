@@ -21,12 +21,12 @@ jobs:
           python-version: '3.13'
       - name: Install pinned packaging tools
         run: python -m pip install -r requirements-dev.txt
+      - name: Run Windows application tests
+        run: python tools/ci_tests.py
       - name: Install browser test harness
         run: python -m pip install playwright==1.62.0
       - name: Install test Chromium
         run: python -m playwright install chromium
-      - name: Run Windows application tests
-        run: python tools/ci_tests.py
       - name: Build application wheel
         run: python -m pip wheel --no-build-isolation --no-deps . --wheel-dir dist
       - name: Assemble verified offline Windows package
