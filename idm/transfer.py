@@ -15,7 +15,7 @@ class TransferStopped(Exception):
     """The manager requested a pause or cancellation."""
 
 
-def transfer(url, destination: Path, *, stopped, progress, timeout=10) -> DownloadResult:
+def transfer(url, destination: Path, *, stopped, progress, timeout=10, on_metadata=None) -> DownloadResult:
     validate_url(url)
     partial = destination.with_name(destination.name + ".part")
     metadata = destination.with_name(destination.name + ".resume.json")
@@ -46,6 +46,11 @@ def transfer(url, destination: Path, *, stopped, progress, timeout=10) -> Downlo
         else:
             raise
     with response:
+        if on_metadata and not offset:
+            destination = on_metadata(response.headers)
+            partial = destination.with_name(destination.name + ".part")
+            metadata = destination.with_name(destination.name + ".resume.json")
+            destination.parent.mkdir(parents=True, exist_ok=True)
         etag = response.headers.get("ETag")
         last_modified = response.headers.get("Last-Modified")
         current_validator = etag if etag and not etag.startswith("W/") else last_modified

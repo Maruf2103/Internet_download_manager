@@ -121,8 +121,14 @@ def main():
             if asset.is_file() and asset.name != "runtime.json":
                 shutil.copy2(asset, stage / asset.name)
         write_icon(stage / "flow.ico")
+        shutil.copytree(ROOT / "idm/chrome_extension", stage / "ChromeExtension")
+        assert json.loads((stage / "ChromeExtension/manifest.json").read_text())["version"] == __version__
+        shutil.copy2(ROOT / "docs/WINDOWS-SETUP.md", stage / "WINDOWS-SETUP.md")
+        shutil.copy2(ROOT / "examples/folder-manifest.json", stage / "folder-manifest-example.json")
+        from idm.chrome_host import extension_id
+        (stage / "CHROME-SETUP.txt").write_text(f"Flow Chrome integration\n\n1. Run Install Flow.cmd, then restart Chrome.\n2. Open chrome://extensions and enable Developer mode.\n3. Click Load unpacked and select the installed ChromeExtension folder.\n   Default: %LOCALAPPDATA%\\Programs\\Flow\\{__version__}\\ChromeExtension\n4. Pin Flow to the toolbar. Open its popup; it should say the bridge is ready.\n5. Right-click a file link and choose Download link with Flow, or paste links in the popup.\n\nExtension ID: {extension_id()}\n\nAutomatic Chrome handoff is optional and off by default. Public HTTP(S) files\nwork directly. Login-protected and DRM downloads may need to stay in Chrome.\nNo cookies are collected. Multiple Wi-Fi bonding is not provided.\n", encoding="utf-8")
         (stage / "runtime-source.json").write_text(json.dumps(spec, indent=2))
-        required = ["runtime/python.exe", "runtime/pythonw.exe", "runtime/python313.dll", "runtime/DLLs/_sqlite3.pyd", "runtime/DLLs/_ssl.pyd", "runtime/Lib/ssl.py", "app/idm/static/index.html", "app/idm/static/flow.svg"]
+        required = ["runtime/python.exe", "runtime/pythonw.exe", "runtime/python313.dll", "runtime/DLLs/_sqlite3.pyd", "runtime/DLLs/_ssl.pyd", "runtime/Lib/ssl.py", "app/idm/static/index.html", "app/idm/static/flow.svg", "app/idm/chrome_extension/manifest.json", "ChromeExtension/manifest.json", "native-host.cmd", "native_host.py"]
         for file in required:
             if not (stage / file).is_file():
                 raise ValueError(f"Runtime/application component missing: {file}")

@@ -42,7 +42,7 @@ function timeLeft(job) {
 
 async function api(path, body) {
   const options = body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
-  const response = await fetch(path, { ...options, cache: "no-store", signal: AbortSignal.timeout(15000) });
+  const response = await fetch(path, { ...options, cache: "no-store", signal: AbortSignal.timeout(path === "/api/folders/preview" ? 40000 : 15000) });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || "The request could not be completed.");
   return data;
@@ -73,7 +73,7 @@ function updateRow(row, job) {
   row.dataset.id = job.id;
   set(".file-name", job.name);
   row.querySelector(".file-name").title = job.name;
-  set(".file-source", new URL(job.url).hostname);
+  set(".file-source", job.folder_name ? `${job.folder_name} / ${job.relative_path}` : new URL(job.url).hostname);
   row.querySelector(".file-source").title = job.sha256 ? `SHA-256: ${job.sha256}` : "";
   set(".file-error", job.error || "");
   const extension = job.name.includes(".") ? job.name.split(".").pop().slice(0, 4).toLowerCase() : "file";
@@ -96,7 +96,7 @@ function updateRow(row, job) {
   fill.style.width = `${percent}%`;
   fill.className = `progress-fill ${job.state}`;
   let detail = "";
-  if (job.state === "downloading") detail = job.speed ? `${size(job.speed)}/s · ${timeLeft(job)}` : "Starting transfer…";
+  if (job.state === "downloading") detail = job.speed ? `${size(job.speed)}/s · ${timeLeft(job)}${job.connections > 1 ? ` · ${job.connections} connections` : ""}` : "Starting transfer…";
   if (job.state === "paused") detail = "Ready to pick up where you left off";
   if (job.state === "queued") detail = "Waiting for an available slot";
   if (job.state === "completed") detail = "Saved and ready";
@@ -168,6 +168,7 @@ async function refresh() {
   try {
     const data = await api("/api/jobs");
     state.jobs = data.jobs;
+    if (document.activeElement !== $("#connections")) $("#connections").value = String(data.connections || 1);
     $("#worker-count").textContent = data.workers;
     $("#connection").replaceChildren(Object.assign(document.createElement("span"), { className: "status-dot" }), document.createTextNode(" Connected"));
     $("#connection").removeAttribute("title");
@@ -312,5 +313,45 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "/") { event.preventDefault(); $("#search").focus(); }
   if (event.key.toLowerCase() === "n") { event.preventDefault(); openAddDialog(); }
 });
+let folderPreview = null;
+let folderGeneration = 0;
+$("#open-folder").addEventListener("click", () => { folderGeneration++; folderPreview = null; $("#folder-submit").disabled = false; $("#folder-preview").hidden = true; $("#folder-error").textContent = ""; $("#folder-submit").textContent = "Preview files"; showDialog($("#folder-dialog")); $("#folder-url").focus(); });
+document.querySelectorAll("[data-close-folder]").forEach((button) => button.addEventListener("click", () => $("#folder-dialog").close()));
+$("#folder-dialog").addEventListener("close", () => { folderGeneration++; });
+$("#folder-url").addEventListener("input", () => { folderGeneration++; folderPreview = null; $("#folder-submit").disabled = false; $("#folder-preview").hidden = true; $("#folder-submit").textContent = "Preview files"; });
+$("#folder-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); const generation = ++folderGeneration; $("#folder-submit").disabled = true; $("#folder-error").textContent = "";
+  try {
+    if (!folderPreview) {
+      const preview = await api("/api/folders/preview", { url: $("#folder-url").value.trim() });
+      if (generation !== folderGeneration) return;
+      folderPreview = preview;
+      $("#folder-summary").textContent = `${folderPreview.name}: ${folderPreview.files.length} files`;
+      $("#folder-files").replaceChildren(...folderPreview.files.map((file) => Object.assign(document.createElement("li"), { textContent: file.path })));
+      $("#folder-preview").hidden = false; $("#folder-submit").textContent = "Download folder";
+    } else {
+      const result = await api("/api/jobs", { items: folderPreview.files, folder_name: folderPreview.name });
+      $("#folder-dialog").close(); toast(`${result.jobs.length} folder files added.`); await refresh();
+    }
+  } catch (error) { if (generation === folderGeneration) $("#folder-error").textContent = error.message; }
+  finally { if (generation === folderGeneration) $("#folder-submit").disabled = false; }
+});
+$("#manifest-file").addEventListener("change", async (event) => {
+  const file = event.target.files[0]; if (!file) return;
+  try {
+    if (file.size > 1024 * 1024) throw new Error("Manifest must be smaller than 1 MB.");
+    const data = JSON.parse(await file.text());
+    if (!Array.isArray(data.files)) throw new Error("Use a JSON object with name and files: [{url, path}].");
+    const result = await api("/api/jobs", { items: data.files, folder_name: data.name || "Imported folder" });
+    toast(`${result.jobs.length} manifest files added.`); await refresh();
+  } catch (error) { toast(error.message); }
+  finally { event.target.value = ""; }
+});
+$("#connections").addEventListener("change", async (event) => {
+  try { await api("/api/settings", { connections: Number(event.target.value) }); toast("Connection limit saved. Applies to the next transfer or resume."); }
+  catch (error) { toast(error.message); } await refresh();
+});
+$("#open-chrome").addEventListener("click", () => showDialog($("#chrome-dialog")));
+$("#close-chrome").addEventListener("click", () => $("#chrome-dialog").close());
 refresh();
 setInterval(refresh, 800);

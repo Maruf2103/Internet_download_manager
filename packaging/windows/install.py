@@ -1,6 +1,7 @@
 """Offline, per-user Windows installer; --check works on any build machine."""
 
 import argparse
+import base64
 import hashlib
 from http.client import HTTPConnection, HTTPException
 import json
@@ -107,8 +108,20 @@ def stop_flow():
         connection.close()
 
 
+def write_native_manifest(target):
+    target = Path(target)
+    extension = target / "ChromeExtension"
+    key = json.loads((extension / "manifest.json").read_text())["key"]
+    digest = hashlib.sha256(base64.b64decode(key)).hexdigest()[:32]
+    extension_id = "".join(chr(ord("a") + int(char, 16)) for char in digest)
+    host = target / "native-host.json"
+    host.write_text(json.dumps({"name": "com.maruf2103.flow", "description": "Flow Download Manager Chrome bridge", "path": str(target / "native-host.cmd"), "type": "stdio", "allowed_origins": [f"chrome-extension://{extension_id}/"]}), encoding="utf-8")
+    return host
+
+
 def register_windows(target, prefix, version):
     target, prefix = Path(target), Path(prefix)
+    host = write_native_manifest(target)
     interpreter = target / "runtime" / "pythonw.exe"
     uninstall = f'"{target / "runtime" / "python.exe"}" -I "{target / "uninstall.py"}" --prefix "{prefix}"'
     script = f"""
@@ -139,6 +152,9 @@ $flowProperties = @{{ DisplayName='Flow Download Manager'; DisplayVersion={ps_qu
 foreach ($flowKey in $flowProperties.Keys) {{ New-ItemProperty $flowRegistry -Name $flowKey -Value $flowProperties[$flowKey] -PropertyType String -Force | Out-Null }}
 New-ItemProperty $flowRegistry -Name NoModify -Value 1 -PropertyType DWord -Force | Out-Null
 New-ItemProperty $flowRegistry -Name NoRepair -Value 1 -PropertyType DWord -Force | Out-Null
+$flowHostKey = 'HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.maruf2103.flow'
+New-Item $flowHostKey -Force | Out-Null
+(Get-Item $flowHostKey).SetValue('', {ps_quote(host)}, [Microsoft.Win32.RegistryValueKind]::String)
 """
     subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script], check=True)
 
@@ -165,6 +181,7 @@ def main():
             register_windows(target, prefix.resolve(), manifest["version"])
         print(f"Flow {manifest['version']} installed in {target}")
         print("Your downloads and history remain in your Downloads\\Flow folder.")
+        print(f"Chrome extension: enable Developer mode at chrome://extensions, choose Load unpacked, and select {target / 'ChromeExtension'}")
         if not args.no_launch:
             subprocess.Popen([str(target / "runtime" / "pythonw.exe"), "-I", str(target / "launch.py")], cwd=target)
         return 0

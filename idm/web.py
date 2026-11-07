@@ -1,6 +1,7 @@
 """Local-only dashboard and JSON API; no third-party web framework required."""
 
 import argparse
+from http.client import HTTPException
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib.resources import files
 import json
@@ -14,6 +15,7 @@ from urllib.parse import quote, urlsplit
 
 from . import __version__
 from .manager import DownloadManager
+from .folders import discover_folder
 
 
 class DashboardServer(ThreadingHTTPServer):
@@ -104,8 +106,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
-            if not 0 < length <= 65536:
-                raise ValueError("Request body must be between 1 and 65536 bytes")
+            if not 0 < length <= 1024 * 1024:
+                raise ValueError("Request body must be between 1 byte and 1 MB")
             body = json.loads(self.rfile.read(length))
             if not isinstance(body, dict):
                 raise ValueError("Request body must be a JSON object")
@@ -118,8 +120,13 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._json({"ok": True})
                 threading.Thread(target=self.server.shutdown, daemon=True).start()
             elif path == "/api/jobs":
-                jobs = self.server.manager.add(body.get("urls"))
+                jobs = self.server.manager.add(body.get("urls"), items=body.get("items"), folder_name=body.get("folder_name"))
                 self._json({"jobs": jobs}, 201)
+            elif path == "/api/settings":
+                self.server.manager.configure(body.get("connections"))
+                self._json({"ok": True})
+            elif path == "/api/folders/preview":
+                self._json(discover_folder(body.get("url")))
             elif match := re.fullmatch(r"/api/jobs/([0-9a-f]{32})/(pause|resume|cancel|retry|remove)", path):
                 self.server.manager.action(match[1], match[2])
                 self._json({"ok": True})
@@ -138,6 +145,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._json({"error": "Download not found"}, 404)
         except ValueError as error:
             self._json({"error": str(error)}, 409)
+        except (OSError, HTTPException):
+            self._json({"error": "Could not read that folder. Use a public directory listing or import a URL manifest."}, 502)
 
 
 def serve(argv=None, *, open_browser=False):

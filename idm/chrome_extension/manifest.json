@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Flow Download Manager",
+  "version": "2.0.0",
+  "description": "Send files, app installers, and folder links to your local Flow download manager.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2WJ8oji1oZTJ2EAYpDrx8/lPshfAhxiIzpp6kpiHnLxrZhH5UCkLcZVJWDZRg8RwhPjwx2/MdClqtkI0cjpXChSzZ3XPhsCmgK5zKRB1TtJI3tYxfTkNI+fPYURgl6tLLeHwHTGOfBRVaJViiYUGNbjrDxHjokpiz+CzntVEiDoLaVDOleA6Ts/t/TF3pfMRIUHlCGjkOYfw5T7JrgOTi+XVbcYVCf9O4apfVplrGGv5SLGe46v2BOfbJd33kn8ww+LpydU/8J5l4HQJKq8RXBFNY4Q1qFMZLp3xcaa/qryKY05IB7syJDbH4rYHqizpJTSIrjTP2cTublyq9C6vJwIDAQAB",
+  "permissions": [
+    "nativeMessaging",
+    "contextMenus",
+    "storage",
+    "downloads",
+    "activeTab",
+    "scripting"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Flow Download Manager",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "64": "icon.png"
+    }
+  },
+  "icons": {
+    "64": "icon.png"
+  }
+}

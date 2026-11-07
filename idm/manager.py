@@ -5,14 +5,17 @@ from datetime import datetime, timezone
 from http.client import HTTPException
 from pathlib import Path
 import json
+import os
 import shutil
 import sqlite3
 import threading
 import time
 import uuid
 
-from .download import DownloadError, filename_from_url, validate_url
-from .transfer import TransferStopped, transfer
+from .download import DownloadError, filename_from_url, validate_url, safe_name, response_filename
+from .folders import relative_path
+from .transfer import TransferStopped
+from .accelerator import accelerated_transfer
 
 
 def now():
@@ -38,11 +41,14 @@ class DownloadManager:
         self._events = {}
         self._db = sqlite3.connect(self.directory / "history.sqlite3", check_same_thread=False)
         self._db.execute("CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, data TEXT NOT NULL)")
+        self._db.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        setting = self._db.execute("SELECT value FROM settings WHERE key = 'connections'").fetchone()
+        self.connections = int(setting[0]) if setting else 8
         self._jobs = {key: json.loads(data) for key, data in self._db.execute("SELECT id, data FROM jobs")}
         for job in self._jobs.values():
             if job["state"] == "cancelling":
                 job.update(state="cancelled", received=0, total=None, speed=0)
-                shutil.rmtree(self.path(job).parent, ignore_errors=True)
+                self._cleanup(job)
                 self._save(job)
             if job["state"] in {"queued", "downloading", "pausing"}:
                 job.update(state="paused", speed=0, error="Paused after application restart")
@@ -55,7 +61,29 @@ class DownloadManager:
             thread.start()
 
     def path(self, job):
+        if job.get("folder_group"):
+            return self.directory / "folders" / job["folder_group"] / job["relative_path"]
         return self.directory / job["id"] / job["name"]
+
+    def _cleanup(self, job):
+        path = self.path(job)
+        if job.get("folder_group"):
+            path.unlink(missing_ok=True)
+            shutil.rmtree(self.directory / ".transfers" / job["id"], ignore_errors=True)
+        else:
+            shutil.rmtree(self.directory / job["id"], ignore_errors=True)
+        parent = path.parent
+        while parent != self.directory and parent.is_relative_to(self.directory):
+            try:
+                parent.rmdir()
+            except OSError:
+                break
+            parent = parent.parent
+
+    def _staging(self, job):
+        if job.get("folder_group"):
+            return self.directory / ".transfers" / job["id"] / job["name"]
+        return self.path(job)
 
     def _save(self, job):
         job["updated_at"] = now()
@@ -64,22 +92,48 @@ class DownloadManager:
 
     def snapshot(self):
         with self._condition:
-            return {"jobs": deepcopy(sorted(self._jobs.values(), key=lambda j: j["created_at"], reverse=True)), "workers": self.workers}
+            return {"jobs": deepcopy(sorted(self._jobs.values(), key=lambda j: j["created_at"], reverse=True)), "workers": self.workers, "connections": self.connections}
 
-    def add(self, urls):
-        if not isinstance(urls, list) or not 1 <= len(urls) <= 50:
-            raise ValueError("Add between 1 and 50 URLs at a time")
-        for url in urls:
-            validate_url(url)
+    def configure(self, connections):
+        if type(connections) is not int or connections not in {1, 2, 4, 8, 16}:
+            raise ValueError("Connections must be 1, 2, 4, 8, or 16")
+        with self._condition:
+            self.connections = connections
+            with self._db:
+                self._db.execute("INSERT OR REPLACE INTO settings VALUES ('connections', ?)", (str(connections),))
+
+    def add(self, urls=None, *, items=None, folder_name=None):
+        if items is None:
+            if not isinstance(urls, list):
+                raise ValueError("Provide a list of file URLs")
+            items = [{"url": url} for url in urls]
+        if not isinstance(items, list) or not 1 <= len(items) <= 500:
+            raise ValueError("Add between 1 and 500 files at a time")
+        prepared = []
+        paths = set()
+        is_folder = folder_name is not None or any(isinstance(item, dict) and item.get("path") for item in items)
+        group = safe_name(folder_name or "Folder").encode("utf-8")[:60].decode("utf-8", errors="ignore") + "-" + uuid.uuid4().hex if is_folder else None
+        for item in items:
+            if not isinstance(item, dict):
+                raise ValueError("Each manifest file must contain a URL and optional relative path")
+            url = validate_url(item.get("url"))
+            path = relative_path(item.get("path") or item.get("name") or filename_from_url(url)) if is_folder else None
+            if path and path.casefold() in paths:
+                raise ValueError("Folder paths must be unique, including on case-insensitive Windows filesystems")
+            if path and any(path.casefold().startswith(p + "/") or p.startswith(path.casefold() + "/") for p in paths):
+                raise ValueError("A folder path cannot also be a file")
+            paths.add(path.casefold() if path else uuid.uuid4().hex)
+            name = path.rsplit("/", 1)[-1] if path else safe_name(item.get("name") or filename_from_url(url))
+            prepared.append((url, name, path, bool(item.get("name") or path)))
         with self._condition:
             if self._closed:
                 raise ValueError("The download manager is shutting down")
-            if len(self._jobs) + len(urls) > 1000:
+            if len(self._jobs) + len(prepared) > 5000:
                 raise ValueError("History is full; remove old downloads before adding more")
             jobs = []
-            for url in urls:
-                name = filename_from_url(url).encode("utf-8")[:180].decode("utf-8", errors="ignore")
+            for url, name, path, named in prepared:
                 job = dict(id=uuid.uuid4().hex, url=url, name=name, state="queued", received=0, total=None, speed=0, sha256=None, error=None, created_at=now(), updated_at=now())
+                job.update(folder_group=group, folder_name=safe_name(folder_name or "Folder") if group else None, relative_path=path, named=named, transfer_mode="auto", connections=0)
                 self._jobs[job["id"]] = job
                 self._save(job)
                 jobs.append(deepcopy(job))
@@ -101,10 +155,10 @@ class DownloadManager:
                 if key in self._events:
                     self._events[key].set()
                 else:
-                    shutil.rmtree(self.path(job).parent, ignore_errors=True)
+                    self._cleanup(job)
                     job.update(received=0, total=None)
             elif action == "remove" and state in {"completed", "cancelled", "failed", "paused"}:
-                shutil.rmtree(self.path(job).parent, ignore_errors=True)
+                self._cleanup(job)
                 with self._db:
                     self._db.execute("DELETE FROM jobs WHERE id = ?", (key,))
                 del self._jobs[key]
@@ -151,16 +205,40 @@ class DownloadManager:
                         last_saved = stamp
 
             result, error = None, None
+
+            def metadata(headers):
+                with self._condition:
+                    path = self._staging(job)
+                    artifacts = [path.with_name(path.name + suffix) for suffix in [".part", ".resume.json", ".segments"]]
+                    if not job.get("named") and not any(p.exists() for p in artifacts):
+                        name = response_filename(headers)
+                        if name:
+                            job["name"] = name
+                            job["named"] = True
+                            self._save(job)
+                    return self._staging(job)
+
+            def mode(kind, count):
+                with self._condition:
+                    job.update(transfer_mode=kind, connections=count)
+
             try:
-                result = transfer(job["url"], self.path(job), stopped=event.is_set, progress=progress)
+                result = accelerated_transfer(job["url"], self._staging(job), stopped=event.is_set, progress=progress, connections=self.connections, on_metadata=metadata, on_mode=mode)
             except TransferStopped:
                 pass
             except (OSError, ValueError, DownloadError, HTTPException) as failure:
                 error = str(failure)
             with self._condition:
                 self._events.pop(job["id"], None)
+                if result is not None and job["state"] != "cancelling" and result.path != self.path(job):
+                    try:
+                        self.path(job).parent.mkdir(parents=True, exist_ok=True)
+                        os.replace(result.path, self.path(job))
+                        shutil.rmtree(result.path.parent, ignore_errors=True)
+                    except OSError as failure:
+                        result, error = None, str(failure)
                 if job["state"] == "cancelling":
-                    shutil.rmtree(self.path(job).parent, ignore_errors=True)
+                    self._cleanup(job)
                     job.update(state="cancelled", received=0, total=None, sha256=None)
                 elif result is not None:
                     job.update(state="completed", received=result.size, total=result.size, sha256=result.sha256, error=None)

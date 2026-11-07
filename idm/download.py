@@ -2,11 +2,13 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from email.message import Message
 import hashlib
 import math
 import os
 from pathlib import Path
 import tempfile
+import re
 from urllib.parse import unquote, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
@@ -52,7 +54,24 @@ def filename_from_url(url: str) -> str:
     name = unquote(urlsplit(url).path.rsplit("/", 1)[-1])
     name = name.replace("\\", "/").rsplit("/", 1)[-1]
     name = "".join(char for char in name if char.isprintable())
-    return name if name not in {"", ".", ".."} else "download"
+    return safe_name(name)
+
+
+def safe_name(name):
+    name = str(name).replace("\\", "/").rsplit("/", 1)[-1]
+    name = re.sub(r'[<>:"/\\|?*\x00-\x1f\x7f]', "_", name).strip().rstrip(". ")
+    if not name or name in {".", ".."}:
+        name = "download"
+    if name.split(".")[0].upper() in {"CON", "PRN", "AUX", "NUL", *[f"COM{n}" for n in range(1, 10)], *[f"LPT{n}" for n in range(1, 10)]}:
+        name = "_" + name
+    return name.encode("utf-8")[:180].decode("utf-8", errors="ignore")
+
+
+def response_filename(headers):
+    message = Message()
+    message["Content-Disposition"] = headers.get("Content-Disposition", "")
+    name = message.get_filename()
+    return safe_name(name) if name else None
 
 
 def download(

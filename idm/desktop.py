@@ -33,7 +33,7 @@ def running(port):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Open the Flow download manager")
-    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--port", type=int, default=int(os.environ.get("FLOW_PORT", "8765")))
     parser.add_argument("--directory", type=Path, default=data_directory())
     parser.add_argument("--workers", type=int, choices=range(1, 9), default=3)
     parser.add_argument("--no-browser", action="store_true", help="start without opening a browser")

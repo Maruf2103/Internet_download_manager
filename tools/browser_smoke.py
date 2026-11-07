@@ -109,6 +109,25 @@ def main():
                 page.locator("#confirm-submit").click()
                 expect(page.locator("#empty")).to_be_visible()
                 page.set_viewport_size({"width": 1440, "height": 1000})
+                page.locator("#connections").select_option("4")
+                expect(page.locator("#toast")).to_contain_text("Connection limit saved")
+                assert manager.snapshot()["connections"] == 4
+                page.locator("#open-folder").click()
+                page.locator("#folder-url").fill(f"http://127.0.0.1:{fixture.server_port}/folder/")
+                page.locator("#folder-submit").click()
+                expect(page.locator("#folder-summary")).to_contain_text("2 files")
+                page.locator("#folder-submit").click()
+                expect(page.locator("#folder-dialog")).not_to_be_visible()
+                expect(page.locator(".download-row")).to_have_count(2)
+                expect(page.locator(".state-pill.completed")).to_have_count(2, timeout=15000)
+                for job in manager.snapshot()["jobs"]:
+                    assert job["folder_group"] and manager.path(job).read_bytes() == PAYLOAD
+                page.locator("#manifest-file").set_input_files({"name": "files.json", "mimeType": "application/json", "buffer": __import__('json').dumps({"name": "Apps", "files": [{"url": f"http://127.0.0.1:{fixture.server_port}/setup.exe", "path": "Windows/Setup.exe"}]}).encode()})
+                expect(page.locator(".download-row")).to_have_count(3)
+                expect(page.locator(".state-pill.completed")).to_have_count(3, timeout=15000)
+                for job in manager.snapshot()["jobs"]:
+                    manager.action(job["id"], "remove")
+                expect(page.locator("#empty")).to_be_visible()
                 page.keyboard.press("n")
                 expect(page.locator("#add-dialog")).to_be_visible()
                 page.keyboard.press("Escape")

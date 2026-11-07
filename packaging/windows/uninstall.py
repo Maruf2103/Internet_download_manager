@@ -42,6 +42,11 @@ foreach ($flowFolder in @([Environment]::GetFolderPath('DesktopDirectory'), [Env
 }}
 $flowRegistry = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\FlowDownloadManager'
 if ((Test-Path $flowRegistry) -and (Get-ItemProperty $flowRegistry).InstallLocation -eq $flowPrefix) {{ Remove-Item $flowRegistry -Recurse }}
+$flowHostKey = 'HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\com.maruf2103.flow'
+if (Test-Path $flowHostKey) {{
+  $flowHostPath = (Get-Item $flowHostKey).GetValue('')
+  if ($flowHostPath -and $flowHostPath.StartsWith($flowPrefix + '\\', [StringComparison]::OrdinalIgnoreCase)) {{ Remove-Item $flowHostKey -Recurse }}
+}}
 $flowMarker = Get-Content -LiteralPath (Join-Path $flowPrefix '{MARKER}') -Raw | ConvertFrom-Json
 if ($flowMarker.application -ne '{APP_ID}' -or $flowMarker.location -ne $flowPrefix) {{ throw 'Flow installation identity changed; removal cancelled.' }}
 Remove-Item -LiteralPath $flowPrefix -Recurse -Force

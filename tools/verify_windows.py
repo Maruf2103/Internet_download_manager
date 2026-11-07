@@ -46,6 +46,12 @@ def main():
         target = installer.install_files(source, prefix)
         assert installer.install_files(source, prefix) == target
         installer.verify_payload(target)
+        host = installer.write_native_manifest(target)
+        from idm.chrome_host import extension_id
+        import json
+        bridge = json.loads(host.read_text())
+        assert bridge["allowed_origins"] == [f"chrome-extension://{extension_id()}/"]
+        assert Path(bridge["path"]).is_file() and bridge["type"] == "stdio"
         assert (target / "app/idm/static/index.html").is_file()
         assert (target / "flow.ico").is_file()
         print("Windows package verified: ZIP SHA-256, every payload file, x64 PE headers, private C runtime, full installation, and repeat installation.")

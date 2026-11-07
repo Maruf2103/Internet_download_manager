@@ -1,0 +1,7 @@
+{
+  "name": "Python documentation",
+  "files": [
+    {"url": "https://raw.githubusercontent.com/python/cpython/3.13/LICENSE", "path": "Documents/LICENSE.txt"},
+    {"url": "https://raw.githubusercontent.com/python/cpython/3.13/README.rst", "path": "Documents/README.rst"}
+  ]
+}

@@ -37,3 +37,8 @@ This package was assembled in a Linux build environment. Application behavior,
 browser UI, installer file operations, and payload integrity were validated there.
 Native Windows execution is checked by the included Windows CI workflow when it
 runs; do not interpret archive validation as a completed Windows execution test.
+
+CHROME EXTENSION AND NEW FEATURES
+See CHROME-SETUP.txt for Chrome integration and WINDOWS-SETUP.md for full computer
+setup, folder manifests, performance options, and limitations. Flow supports any
+direct HTTP(S) file type, not just videos. Multiple Wi-Fi bonding is not included.

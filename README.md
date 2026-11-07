@@ -5,8 +5,8 @@ Built with Python 3.12+ and the standard library; there are no runtime dependenc
 
 ## Install on Windows
 
-[Download Flow 1.1.0 for Windows x64](https://github.com/Maruf2103/Internet_download_manager/raw/refs/heads/windows-download/Flow-1.1.0-Windows-x64.zip)
-and its [SHA-256 checksum](https://github.com/Maruf2103/Internet_download_manager/raw/refs/heads/windows-download/Flow-1.1.0-Windows-x64.zip.sha256).
+[Download Flow 2.0.0 for Windows x64](https://github.com/Maruf2103/Internet_download_manager/raw/refs/heads/windows-download/Flow-2.0.0-Windows-x64.zip)
+and its [SHA-256 checksum](https://github.com/Maruf2103/Internet_download_manager/raw/refs/heads/windows-download/Flow-2.0.0-Windows-x64.zip.sha256).
 The same files are available in the prepared `dist/` directory. After downloading,
 right-click it and choose **Extract All**, then double-click **Install Flow.cmd**.
 The offline package includes its Python runtime. You do not need Python, pip,
@@ -44,8 +44,19 @@ registration, launch, instance reuse, clean shutdown, and uninstall when run.
 - Quickly paste a link, sort files, use keyboard shortcuts (`N` to add, `/` to
   search), and confirm deletion in an accessible dialog.
 
-This is a personal, local application. It does not include browser interception,
-video-site extraction, scheduled downloads, or a public multi-user service.
+Flow 2 adds validated segmented transfers (up to 16 connections per file),
+public folder-tree downloads, manifest import, and a Chrome Manifest V3 extension
+with a local native-messaging bridge. All direct file types are supported,
+including application installers; downloaded applications are never auto-executed.
+
+**[Windows installation and Chrome setup guide](docs/WINDOWS-SETUP.md)**
+
+Speed depends on your network, disk, and server. Multiple-Wi-Fi bonding, video-site
+extraction, authenticated cookie transfer, and DRM bypass are not included.
+Cloud folders can use their provider's archive export; public directory listings
+and explicit URL manifests preserve nested folder paths.
+
+This is a personal, local application. It does not include video-site extraction, scheduled downloads, or a public multi-user service. Chrome download handoff is opt-in and uses no cookies.
 
 ## Quick start
 
@@ -160,7 +171,7 @@ python3 tools/browser_smoke.py --browser /usr/bin/chromium
 
 To capture a dashboard screenshot, add `--screenshot /tmp/flow.png`.
 This also captures dark-theme and mobile screenshots with `-dark` and `-mobile`
-suffixes. The browser smoke check additionally covers quick add, sorting,
+suffixes. The browser smoke check additionally covers folder previews, manifest import, connection settings, quick add, sorting,
 accessible progress, modal focus restoration, keyboard shortcuts, and quitting.
 
 ## Build the Windows package
@@ -172,7 +183,7 @@ accessible progress, modal focus restoration, keyboard shortcuts, and quitting.
 
 The builder downloads the pinned official runtime from `api.nuget.org` on the
 first run and reuses only checksum-valid cache entries thereafter. No verification
-is disabled. The resulting `dist/Flow-1.1.0-Windows-x64.zip` contains the complete
+is disabled. The resulting `dist/Flow-2.0.0-Windows-x64.zip` contains the complete
 application, Windows runtime, installer, uninstaller, icon, and payload manifest.
 The `packaging/windows/runtime.json` file records the authoritative hash metadata.
 On a machine with Python, the extracted installer's `--check` mode verifies the
@@ -194,3 +205,17 @@ policy must allow each download hostname and redirect destination. The configure
 package-manager preset supports installation and the documented public GitHub
 smoke download. Add other destinations in environment settings while preserving
 existing rules; never disable proxy settings or TLS verification to bypass policy.
+
+## Chrome bridge tests
+
+```sh
+.venv/bin/python -m unittest discover -s tests -v
+node tools/test_extension.js
+# Requires an unmanaged Chromium with unpacked extensions allowed:
+python3 tools/chrome_smoke.py --browser /path/to/chromium
+```
+
+The managed cloud Chromium blocks unpacked extensions by administrator policy.
+This is a real end-to-end test blocker; native protocol and handoff logic tests
+do not replace a native Chrome execution result. Windows CI runs the extension
+test with Playwright Chromium and the bundled Python runtime.

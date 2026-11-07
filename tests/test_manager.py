@@ -18,6 +18,14 @@ class RangeHandler(BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
+        if self.path == "/folder/":
+            body = b'<h1>Index of folder</h1><a href="setup.exe">Setup</a><a href="archive.zip">Archive</a>'
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if self.path == "/missing" or (self.path == "/flaky" and self.server.fail):
             self.send_error(404)
             return
