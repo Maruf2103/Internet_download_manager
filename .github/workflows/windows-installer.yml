@@ -21,6 +21,8 @@ jobs:
           python-version: '3.13'
       - name: Test application and build wheel
         run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           python -m pip install -r requirements-dev.txt
           python -m pip install playwright==1.62.0
           python -m playwright install chromium

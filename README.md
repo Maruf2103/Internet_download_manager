@@ -24,9 +24,7 @@ The builder verifies the official Python Software Foundation runtime using its
 pinned NuGet SHA-512, and the installer checks every bundled payload file. The
 release ZIP has a separate `.zip.sha256` file. The Windows package was assembled
 and integrity-checked on Linux, and its installer file operations were tested
-there. **Native Windows execution has not been verified in this environment.**
-The included Windows installer CI workflow tests native installation, shortcuts,
-registration, launch, instance reuse, clean shutdown, and uninstall when run.
+there. **Native Windows installation and real Chrome bridge integration passed [Windows CI](https://github.com/Maruf2103/Internet_download_manager/actions/runs/42370345154) for application commit `45a2e4f`.** The run also verified desktop launch, instance reuse, clean shutdown, and uninstall with downloaded files retained.
 
 ## What works
 

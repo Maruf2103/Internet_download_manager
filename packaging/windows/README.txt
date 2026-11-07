@@ -33,10 +33,11 @@ official Python Software Foundation runtime against its pinned NuGet SHA-512.
 The installer verifies every payload file before copying it. You can run
 runtime\python.exe -I install.py --check to check the extracted bundle.
 
-This package was assembled in a Linux build environment. Application behavior,
-browser UI, installer file operations, and payload integrity were validated there.
-Native Windows execution is checked by the included Windows CI workflow when it
-runs; do not interpret archive validation as a completed Windows execution test.
+The application, installer, real Chrome native bridge, launch/reuse/shutdown,
+and uninstall were validated by native Windows CI for application commit 45a2e4f:
+https://github.com/Maruf2103/Internet_download_manager/actions/runs/42370345154
+The Linux build also verifies the ZIP, payload hashes, runtime architecture,
+installer file operations, and repeat installation.
 
 CHROME EXTENSION AND NEW FEATURES
 See CHROME-SETUP.txt for Chrome integration and WINDOWS-SETUP.md for full computer

@@ -153,6 +153,4 @@ The Linux test suite exercises actual bytes, segment resume, fallback, folder
 paths, native protocol framing/identity restrictions, and the desktop/API workflow.
 The web dashboard is tested in Chromium. The managed cloud browser blocks loading
 unpacked extensions by administrator policy, so its full Chrome native integration
-cannot be verified there. The Windows CI workflow includes installation, bridge
-registration, real Chromium extension handoff, and uninstall; native Windows
-results must be confirmed separately, not inferred from a successfully built ZIP.
+cannot be verified there. The native [Windows CI run](https://github.com/Maruf2103/Internet_download_manager/actions/runs/42370345154) passed installation, bridge registration, real Chromium extension handoff, desktop launch/reuse/shutdown, and uninstall with retained downloads for application commit `45a2e4f`. These results are separate from the Linux archive checks.
